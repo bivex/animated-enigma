@@ -1,8 +1,8 @@
 # Angular Smells Detector
 
-**Angular Static Analysis Tool** | **Angular Anti-Patterns** | **Angular Code Quality** | **Angular Performance** | **Angular Security** | **TypeScript** | **SSR** | **Signals** | **NgRx** | **Dependency Injection**
+**Angular Static Analysis Tool** | **Angular Anti-Patterns** | **Angular Code Quality** | **Angular Performance** | **Angular Security** | **TypeScript** | **SSR** | **Signals** | **NgRx** | **Dependency Injection** | **Template Anti-Patterns** | **Accessibility** | **i18n**
 
-Angular application static analysis tool based on formal Z-notation specifications from the anti-patterns catalog. Detects over 57+ architectural issues, security vulnerabilities, and performance problems in Angular projects.
+Angular application static analysis tool based on formal Z-notation specifications from the anti-patterns catalog. Detects over 73+ architectural issues, security vulnerabilities, and performance problems in Angular projects.
 
 **Keywords**: angular smells, angular anti-patterns, angular static analysis, angular code quality, angular performance, angular security, typescript analysis, angular signals, angular hydration, angular ngrx, angular dependency injection, angular best practices, angular linting, angular code review, angular architecture, angular refactoring, angular optimization, angular developer tools, frontend code quality, angular enterprise, angular large scale applications
 
@@ -49,7 +49,7 @@ angular-smells --version
 
 ## ✨ Key Features
 
-- **🔍 57+ anti-pattern detectors** - Complete coverage of Angular architectural issues
+- **🔍 73+ anti-pattern detectors** - Complete coverage of Angular architectural issues including 16+ template anti-patterns
 - **📊 Formal Z-notation specifications** - Mathematically precise detection
 - **🎯 4 severity levels** - Fix prioritization (Critical/High/Medium/Low)
 - **⚡ High performance** - Fast analysis of large codebases
@@ -87,18 +87,33 @@ angular-smells --version
 ## 📋 What it Detects
 
 ### Template & Rendering Anti-Patterns
+- **ASYNC_PIPE_MULTIPLE_SUBSCRIPTIONS**: Multiple async pipe subscriptions to same observable
+- **COMPLEX_TEMPLATE_LOGIC**: Complex calculations and method calls in template expressions
 - **CONTROL_FLOW_DEPRECATED**: Deprecated *ngIf/*ngFor directives
 - **DEFER_ABOVE_FOLD**: @defer used on above-the-fold content
 - **DEFER_ERROR_BLOCKS**: @defer without @error blocks
 - **DEFER_NON_STANDALONE**: @defer in non-standalone components
+- **FORM_STATE_NOT_CLEARED**: Forms not reset after successful submission
+- **HEAVY_COMPUTATION_PIPES**: Expensive computations in pipe transforms
 - **HYDRATION_INVALID_HTML**: DOM manipulation during hydration
 - **HYDRATION_MISMATCH**: DOM mismatches during SSR hydration
 - **HYDRATION_MISSING_EVENT_REPLAY**: HostListener without event replay
 - **HYDRATION_INCREMENTAL_TRIGGER**: Incremental hydration without triggers
 - **IMPURE_TEMPLATE_CALL**: Function calls in template expressions
 - **LARGE_LIST_WITHOUT_VIRTUALIZATION**: Large lists without virtualization
+- **MISSING_ACCESSIBILITY_ATTRIBUTES**: Form inputs without proper labels/ARIA
 - **MISSING_TRACKBY**: Missing trackBy functions in ngFor
+- **NESTED_NGIF**: Deeply nested *ngIf for null checks
+- **NGIF_NGFOR_SAME_ELEMENT**: *ngIf and *ngFor on same element
+- **NO_COMPONENT_ENCAPSULATION**: Missing ViewEncapsulation settings
+- **NO_I18N_INTEGRATION**: Hardcoded user-facing text without i18n
+- **NO_ONPUSH_STRATEGY**: Components not using OnPush change detection
+- **NULL_SAFETY**: Unsafe property access without safe navigation
+- **TEMPLATE_DRIVEN_COMPLEX_FORMS**: Complex forms using template-driven approach
 - **TEMPLATE_METHOD_CALL**: Method calls in template bindings
+- **TRUSTING_EXTERNAL_URLS**: External URL bindings without validation
+- **TWO_WAY_BINDING_HEAVY_USE**: Excessive use of two-way binding
+- **TWO_WAY_OBJECT_BINDING**: Two-way binding on nested object properties
 - **UNSAFE_INNER_HTML**: XSS vulnerabilities through innerHTML
 
 ### Reactivity & Signals Anti-Patterns
@@ -173,9 +188,35 @@ src/
 │   └── TemplateParser.ts    # AST parsing of Angular templates
 ├── detector/
 │   └── AngularSmellDetector.ts  # Anti-pattern detection
-└── reporter/
-    └── ReportGenerator.ts   # Report generation with severity
+├── reporter/
+│   └── ReportGenerator.ts   # Report generation with severity
+└── template-tests/          # Test cases for template anti-patterns
+    ├── bad.component.ts     # Anti-pattern examples
+    ├── good.component.ts    # Correct implementation examples
+    └── README.md           # Test documentation
 ```
+
+## 🧪 Template Tests
+
+The `template-tests/` directory contains comprehensive test cases for all template anti-patterns:
+
+```
+template-tests/
+├── README.md                    # Test documentation
+├── nested-ngif/                # Nested *ngIf anti-patterns
+│   ├── bad.component.ts        # Anti-pattern example
+│   └── good.component.ts       # Correct implementation
+├── trusting-external-urls/     # Security vulnerabilities
+├── complex-template-logic/     # Performance issues
+└── [16 more test folders]      # Complete coverage
+```
+
+Each test folder contains:
+- **`bad.component.ts`**: Demonstrates the anti-pattern with inline template
+- **`good.component.ts`**: Shows the correct, modern Angular implementation
+- **Detection validation**: All examples are automatically tested by the detector
+
+Run tests: `npm run start template-tests`
 
 ## 🔧 Technical Stack
 
@@ -201,6 +242,7 @@ src/
 
 | Anti-Pattern | Category | Severity | Description |
 |-------------|-----------|----------|----------|
+| `ASYNC_PIPE_MULTIPLE_SUBSCRIPTIONS` | Template & Rendering | 🟠 HIGH | Multiple async pipe subscriptions to same observable |
 | `CIRCULAR_DEPENDENCY_INJECTION` | Architecture & Dependency Injection | 🔴 CRITICAL | Circular dependencies between services |
 | `ENTITY_DUPLICATION` | State Management | 🔴 CRITICAL | Entity duplication in NgRx state |
 | `FORMS_MIXED` | Forms & Validation | 🔴 CRITICAL | Mixing template-driven and reactive forms |
@@ -212,6 +254,7 @@ src/
 | `PROVIDER_POLLUTION` | Architecture & Dependency Injection | 🔴 CRITICAL | Root services in component providers |
 | `ROUTING_ORDER` | Routing & Navigation | 🔴 CRITICAL | Routes defined after wildcard route |
 | `UNSAFE_INNER_HTML` | Template & Rendering | 🔴 CRITICAL | XSS vulnerabilities through innerHTML |
+| `TRUSTING_EXTERNAL_URLS` | Template & Rendering | 🟠 HIGH | External URL bindings without validation |
 | `DEFER_ABOVE_FOLD` | Performance & Bundle Metrics | 🟠 HIGH | @defer used on above-the-fold content |
 | `DEFER_NON_STANDALONE` | Architecture & Dependency Injection | 🟠 HIGH | @defer in non-standalone components |
 | `FORMS_VALUE_CHANGES` | Forms & Validation | 🟠 HIGH | Form subscriptions without cleanup |
@@ -230,9 +273,22 @@ src/
 | `ZONE_POLLUTION` | Performance & Bundle Metrics | 🟠 HIGH | Libraries triggering Change Detection |
 | `ZONLESS_NGZONE_STABLE` | Performance & Bundle Metrics | 🟠 HIGH | NgZone usage in zoneless apps |
 | `ZONLESS_TIMER_UPDATES` | Performance & Bundle Metrics | 🟠 HIGH | Timers without change detection in zoneless |
+| `COMPLEX_TEMPLATE_LOGIC` | Template & Rendering | 🟠 HIGH | Complex calculations in template expressions |
+| `TWO_WAY_OBJECT_BINDING` | Template & Rendering | 🟠 HIGH | Two-way binding on nested object properties |
 | `BROAD_SELECTORS` | State Management | 🟡 MEDIUM | NgRx selectors returning excessive data |
 | `CONTROL_FLOW_DEPRECATED` | Template & Rendering | 🟡 MEDIUM | Deprecated *ngIf/*ngFor directives |
 | `DEFER_ERROR_BLOCKS` | Template & Rendering | 🟡 MEDIUM | @defer without @error blocks |
+| `FORM_STATE_NOT_CLEARED` | Template & Rendering | 🟡 MEDIUM | Forms not reset after successful submission |
+| `HEAVY_COMPUTATION_PIPES` | Template & Rendering | 🟡 MEDIUM | Expensive computations in pipe transforms |
+| `MISSING_ACCESSIBILITY_ATTRIBUTES` | Template & Rendering | 🟡 MEDIUM | Form inputs without proper labels/ARIA |
+| `NESTED_NGIF` | Template & Rendering | 🟡 MEDIUM | Deeply nested *ngIf for null checks |
+| `NGIF_NGFOR_SAME_ELEMENT` | Template & Rendering | 🟡 MEDIUM | *ngIf and *ngFor on same element |
+| `NO_COMPONENT_ENCAPSULATION` | Template & Rendering | 🟡 MEDIUM | Missing ViewEncapsulation settings |
+| `NO_I18N_INTEGRATION` | Template & Rendering | 🟡 MEDIUM | Hardcoded user-facing text without i18n |
+| `NO_ONPUSH_STRATEGY` | Template & Rendering | 🟡 MEDIUM | Components not using OnPush change detection |
+| `NULL_SAFETY` | Template & Rendering | 🟡 MEDIUM | Unsafe property access without safe navigation |
+| `TEMPLATE_DRIVEN_COMPLEX_FORMS` | Template & Rendering | 🟡 MEDIUM | Complex forms using template-driven approach |
+| `TWO_WAY_BINDING_HEAVY_USE` | Template & Rendering | 🟡 MEDIUM | Excessive use of two-way binding |
 | `FORMS_TYPED` | Forms & Validation | 🟡 MEDIUM | Untyped FormControl usage |
 | `HYDRATION_INCREMENTAL_TRIGGER` | Performance & Bundle Metrics | 🟡 MEDIUM | Incremental hydration without triggers |
 | `HYDRATION_MISSING_EVENT_REPLAY` | Template & Rendering | 🟡 MEDIUM | HostListener without event replay |
@@ -296,6 +352,8 @@ IMPURE_TEMPLATE_CALL(e) ≜ e ∈ Bindings ∧ isCallExpression(e) ∧ ¬isSigna
 ## 🔮 Future Improvements
 
 - [x] Full Angular template parsing
+- [x] **16+ Template anti-pattern detectors** (security, performance, accessibility)
+- [x] Template test suite with bad/good examples
 - [x] NgRx store analysis (Entity Duplication, Broad Selectors)
 - [x] Component complexity metrics (Cyclomatic Complexity, LOC)
 - [x] Extended memory leak detection
