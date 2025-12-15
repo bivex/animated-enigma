@@ -8,18 +8,43 @@ Angular application static analysis tool based on formal Z-notation specificatio
 
 ## 🚀 Quick Start
 
+Get up and running in seconds—analyze your Angular project for anti-patterns and code smells right from the command line.
+
+### 1️⃣ Install (global, preferred)
+
 ```bash
-# Install dependencies
-npm install
-
-# Global installation (recommended)
 npm install -g .
+```
 
-# Run project analysis
+### 2️⃣ Analyze your project
+
+```bash
 angular-smells /path/to/your/angular/project
+```
 
-# Or for local execution
+### 3️⃣ (Alternatively) Run via npm script (local install)
+
+```bash
+npm install
 npm run start /path/to/your/angular/project
+```
+
+### 4️⃣ (Advanced) Direct node execution
+
+```bash
+node dist/presentation/cli/cli.js ./path/to/project --format console --min-severity CRITICAL
+```
+
+---
+
+Want help?
+```bash
+angular-smells --help
+```
+
+Check your version:
+```bash
+angular-smells --version
 ```
 
 ## ✨ Key Features
