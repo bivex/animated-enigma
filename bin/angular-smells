@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+const { AngularSmellDetector } = require('../dist/detector/AngularSmellDetector');
+const { FileScanner } = require('../dist/scanner/FileScanner');
+const { ReportGenerator } = require('../dist/reporter/ReportGenerator');
+
+async function main() {
+  const args = process.argv.slice(2);
+
+  if (args.length === 0) {
+    console.log('Usage: angular-smells <project-path>');
+    console.log('');
+    console.log('Examples:');
+    console.log('  angular-smells .');
+    console.log('  angular-smells /path/to/angular/project');
+    process.exit(1);
+  }
+
+  const projectPath = args[0];
+
+  console.log('🔍 Scanning Angular project for anti-patterns...\n');
+
+  // Initialize components
+  const scanner = new FileScanner();
+  const detector = new AngularSmellDetector();
+  const reporter = new ReportGenerator();
+
+  try {
+    // Scan project files
+    const files = await scanner.scanProject(projectPath);
+
+    // Detect smells
+    const results = await detector.analyzeFiles(files);
+
+    // Generate report
+    const report = reporter.generate(results);
+
+    console.log(report);
+
+    // Exit with appropriate code
+    const hasCritical = results.some(r => r.severity === 'CRITICAL');
+    process.exit(hasCritical ? 1 : 0);
+
+  } catch (error) {
+    console.error('❌ Error analyzing project:', error);
+    process.exit(1);
+  }
+}
+
+main().catch(console.error);

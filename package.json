@@ -1,0 +1,36 @@
+{
+  "name": "angular-smells-detector",
+  "version": "1.0.0",
+  "description": "Angular Anti-Pattern Detection Tool based on Formal Z-Notation Specifications",
+  "main": "dist/index.js",
+  "bin": {
+    "angular-smells": "dist/presentation/cli/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "echo \"Run: npm run start <project-path>\""
+  },
+  "keywords": [
+    "angular",
+    "static-analysis",
+    "anti-patterns",
+    "linting",
+    "code-quality"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@angular-eslint/template-parser": "^21.1.0",
+    "@angular/compiler": "^21.0.5",
+    "@angular/compiler-cli": "^21.0.5",
+    "@typescript-eslint/parser": "^8.49.0",
+    "fast-glob": "^3.3.3",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.27",
+    "ts-node": "^10.9.2"
+  }
+}

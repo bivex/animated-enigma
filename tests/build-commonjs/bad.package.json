@@ -1,0 +1,35 @@
+// BAD: CommonJS dependencies preventing tree-shaking anti-patterns
+{
+  "name": "angular-app",
+  "version": "1.0.0",
+  "dependencies": {
+    // BAD: CommonJS dependencies that prevent tree-shaking
+    "lodash": "^4.17.21",  // BAD: CommonJS, large bundle impact
+    "moment": "^2.29.4",   // BAD: CommonJS, better alternatives exist
+    "jquery": "^3.6.0",    // BAD: CommonJS, not needed in modern Angular
+    "underscore": "^1.13.6", // BAD: CommonJS, lodash alternative
+    "ramda": "^0.28.0",    // BAD: Mixed modules, can cause issues
+
+    // BAD: Large CommonJS libraries
+    "d3": "^7.6.1",        // BAD: CommonJS, consider alternatives
+    "chart.js": "^3.9.1",  // BAD: Can be CommonJS depending on import
+
+    // BAD: Legacy CommonJS utilities
+    "async": "^3.2.4",     // BAD: CommonJS, modern alternatives exist
+    "bluebird": "^3.7.2",  // BAD: CommonJS Promise library
+
+    // Angular specific BAD dependencies
+    "@angular/http": "^7.2.16", // BAD: Deprecated, CommonJS patterns
+    "rxjs-compat": "^6.6.7"     // BAD: Compatibility layer, CommonJS
+  },
+  "devDependencies": {
+    // BAD: CommonJS build tools
+    "gulp": "^4.0.2",      // BAD: CommonJS task runner
+    "grunt": "^1.5.3",     // BAD: CommonJS task runner
+
+    // BAD: CommonJS testing utilities
+    "karma": "^6.4.0",     // BAD: CommonJS test runner (though migrating)
+    "mocha": "^10.0.0",    // BAD: CommonJS test framework
+    "chai": "^4.3.7",      // BAD: CommonJS assertion library
+  }
+}

@@ -1,0 +1,22 @@
+<!-- BAD: Hydration mismatch examples -->
+
+<!-- Nested anchor tags - invalid HTML structure -->
+<a href="/parent">
+  <a href="/child">Nested link</a>
+</a>
+
+<!-- Dynamic/random content that differs between server and client -->
+<div>Current time: {{ getCurrentTime() }}</div>
+<div>Random number: {{ Math.random() }}</div>
+<div>User ID: {{ generateUserId() }}</div>
+
+<!-- Unsafe innerHTML without sanitization -->
+<div [innerHTML]="userGeneratedContent"></div>
+
+<!-- Table structure violations -->
+<table>
+  <div>Invalid element inside table</div>
+  <tr>
+    <td>Cell content</td>
+  </tr>
+</table>

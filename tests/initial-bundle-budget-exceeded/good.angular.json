@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "my-app": {
+      "architect": {
+        "build": {
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mB",
+                  "maximumError": "2mB"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

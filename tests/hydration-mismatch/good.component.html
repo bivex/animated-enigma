@@ -1,0 +1,30 @@
+<!-- GOOD: Hydration-safe examples -->
+
+<!-- Valid HTML structure -->
+<div class="link-container">
+  <a href="/parent">Parent Link</a>
+  <a href="/child">Child Link</a>
+</div>
+
+<!-- Static content that matches server and client -->
+<div>Last updated: {{ lastUpdated }}</div>
+<div>Version: {{ appVersion }}</div>
+
+<!-- Sanitized innerHTML -->
+<div [innerHTML]="sanitizedContent"></div>
+
+<!-- Proper table structure -->
+<table>
+  <thead>
+    <tr>
+      <th>Column 1</th>
+      <th>Column 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data 1</td>
+      <td>Data 2</td>
+    </tr>
+  </tbody>
+</table>

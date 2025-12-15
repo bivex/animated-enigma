@@ -1,0 +1,27 @@
+<div class="container">
+  <!-- IMPURE_TEMPLATE_CALL -->
+  <div>{{ getUserName() }}</div>
+  <div>{{ calculateTotal(items) }}</div>
+
+  <!-- LARGE_LIST_WITHOUT_VIRTUALIZATION -->
+  <div *ngFor="let item of largeList">
+    {{ item.name }}
+  </div>
+
+  <!-- HYDRATION_MISMATCH - nested anchors -->
+  <a href="/link1">
+    <a href="/link2">Nested link</a>
+  </a>
+
+  <!-- HYDRATION_MISMATCH - dynamic content -->
+  <div>{{ Math.random() }}</div>
+  <div>{{ Date.now() }}</div>
+
+  <!-- UNSAFE_INNER_HTML -->
+  <div [innerHTML]="userGeneratedContent"></div>
+
+  <!-- Good practice - trackBy -->
+  <div *ngFor="let item of items; trackBy: trackByFn">
+    {{ item.name }}
+  </div>
+</div>

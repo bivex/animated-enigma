@@ -1,0 +1,1 @@
+export { AngularSmellsCli } from './AngularSmellsCli';

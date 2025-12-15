@@ -1,0 +1,46 @@
+// GOOD: ES module dependencies enabling tree-shaking
+{
+  "name": "angular-app",
+  "version": "1.0.0",
+  "dependencies": {
+    // GOOD: ES module alternatives with tree-shaking
+    "lodash-es": "^4.17.21",  // GOOD: ES modules version of lodash
+    "date-fns": "^2.29.3",    // GOOD: Modern date utility, ES modules
+    "ramda": "^0.28.0",      // GOOD: Functional programming, tree-shakable
+
+    // GOOD: Angular-optimized libraries
+    "@angular/animations": "^16.0.0", // GOOD: Angular's own ES modules
+    "@angular/common": "^16.0.0",
+    "@angular/core": "^16.0.0",
+
+    // GOOD: Modern ES module libraries
+    "rxjs": "^7.8.0",        // GOOD: RxJS is ES modules
+    "zone.js": "^0.13.0",    // GOOD: ES modules
+
+    // GOOD: Tree-shakable UI libraries
+    "angular-material": "^16.0.0", // GOOD: Angular's material is tree-shakable
+    "primeng": "^16.0.0",    // GOOD: PrimeNG supports tree-shaking
+
+    // GOOD: Modern utility libraries
+    "clsx": "^1.2.1",        // GOOD: Tree-shakable classnames utility
+    "nanoid": "^4.0.0",      // GOOD: Small, tree-shakable ID generator
+
+    // GOOD: HTTP client libraries
+    "axios": "^1.3.4",       // GOOD: ES modules, tree-shakable
+    "ky": "^0.33.0",         // GOOD: Modern fetch-based, tree-shakable
+  },
+  "devDependencies": {
+    // GOOD: Modern ES module build tools
+    "vite": "^4.2.0",        // GOOD: ES modules, fast bundler
+    "esbuild": "^0.17.0",    // GOOD: Extremely fast, ES modules
+
+    // GOOD: Modern testing with ES modules
+    "vitest": "^0.29.0",     // GOOD: ES modules test runner
+    "playwright": "^1.31.0", // GOOD: Modern e2e testing
+
+    // GOOD: TypeScript and ESLint with ES modules
+    "typescript": "^5.0.0",  // GOOD: ES modules support
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0"
+  }
+}
