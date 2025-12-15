@@ -84,6 +84,7 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
       // Component analysis
       if (this.isComponentFile(file.content)) {
         smells.push(...this.detectComponentSmells(file, sourceFile));
+        smells.push(...this.detectTemplateSmellsInComponent(file, sourceFile));
       }
 
       // Service analysis
@@ -118,6 +119,67 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
     }
 
     return smells;
+  }
+
+  private detectTemplateSmellsInComponent(file: SourceFile, sourceFile: ts.SourceFile): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+
+    // Extract template content from component
+    const templateContent = this.extractTemplateContent(file.content);
+    if (!templateContent) {
+      return smells;
+    }
+
+    // Create a temporary template file for analysis
+    const templateFile = new SourceFile(
+      file.filePath + '.template',
+      templateContent,
+      FileType.TEMPLATE,
+      templateContent.length
+    );
+
+    try {
+      // Use template parser for analysis
+      const analysis = this.templateParser.parse(templateContent);
+
+      // Run all template-specific smell detectors
+      smells.push(...this.detectTrustingExternalUrls(templateFile, analysis));
+      smells.push(...this.detectNestedNgIf(templateFile, analysis));
+      smells.push(...this.detectNgIfNgForSameElement(templateFile, analysis));
+      smells.push(...this.detectComplexTemplateLogic(templateFile, analysis));
+      smells.push(...this.detectTwoWayObjectBinding(templateFile, analysis));
+      smells.push(...this.detectNullSafety(templateFile, analysis));
+      smells.push(...this.detectTemplateDrivenComplexForms(templateFile, analysis));
+      smells.push(...this.detectFormStateNotCleared(templateFile, analysis));
+      smells.push(...this.detectHeavyComputationPipes(templateFile, analysis));
+      smells.push(...this.detectAsyncPipeMultipleSubscriptions(templateFile, analysis));
+      smells.push(...this.detectNoOnPushStrategy(templateFile, analysis));
+      smells.push(...this.detectTwoWayBindingHeavyUse(templateFile, analysis));
+      smells.push(...this.detectNoComponentEncapsulation(templateFile, analysis));
+      smells.push(...this.detectNoI18nIntegration(templateFile, analysis));
+      smells.push(...this.detectMissingAccessibilityAttributes(templateFile, analysis));
+
+    } catch (error) {
+      // Don't throw error for template parsing failures in components
+      this.logger.debug('Template parsing failed in component', {
+        file: file.filePath,
+        error: (error as Error).message
+      });
+    }
+
+    return smells;
+  }
+
+  private extractTemplateContent(content: string): string | null {
+    // Extract template from template: `...` or templateUrl: '...' (inline templates only)
+    const templateRegex = /template\s*:\s*`([^`]*)`/s;
+    const match = content.match(templateRegex);
+
+    if (match) {
+      return match[1];
+    }
+
+    return null;
   }
 
   private analyzeConfigurationFile(file: SourceFile): CodeSmell[] {
@@ -250,17 +312,70 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
     // 1. UNSAFE_INNER_HTML detection
     smells.push(...this.detectUnsafeInnerHtml(file, analysis));
 
-    // 2. HYDRATION_MISMATCH detection
+    // 2. TRUSTING_EXTERNAL_URLS detection
+    smells.push(...this.detectTrustingExternalUrls(file, analysis));
+
+    // 3. HYDRATION_MISMATCH detection
     smells.push(...this.detectHydrationMismatch(file, analysis));
 
-    // 3. MISSING_TRACKBY detection
+    // 4. MISSING_TRACKBY detection
     smells.push(...this.detectMissingTrackBy(file, analysis));
 
-    // 4. LARGE_LIST_WITHOUT_VIRTUALIZATION detection
+    // 5. LARGE_LIST_WITHOUT_VIRTUALIZATION detection
     smells.push(...this.detectLargeListWithoutVirtualization(file, analysis));
 
-    // 5. IMPURE_TEMPLATE_CALL detection
+    // 6. IMPURE_TEMPLATE_CALL detection
     smells.push(...this.detectImpureTemplateCall(file, analysis));
+
+    // PHASE 2: Structural & Data Binding Issues
+
+    // 7. NESTED_NGIF detection
+    smells.push(...this.detectNestedNgIf(file, analysis));
+
+    // 8. NGIF_NGFOR_SAME_ELEMENT detection
+    smells.push(...this.detectNgIfNgForSameElement(file, analysis));
+
+    // 9. COMPLEX_TEMPLATE_LOGIC detection
+    smells.push(...this.detectComplexTemplateLogic(file, analysis));
+
+    // 10. TWO_WAY_OBJECT_BINDING detection
+    smells.push(...this.detectTwoWayObjectBinding(file, analysis));
+
+    // 11. NULL_SAFETY detection
+    smells.push(...this.detectNullSafety(file, analysis));
+
+    // PHASE 3: Form & Pipe Issues
+
+    // 12. TEMPLATE_DRIVEN_COMPLEX_FORMS detection
+    smells.push(...this.detectTemplateDrivenComplexForms(file, analysis));
+
+    // 13. FORM_STATE_NOT_CLEARED detection
+    smells.push(...this.detectFormStateNotCleared(file, analysis));
+
+    // 14. HEAVY_COMPUTATION_PIPES detection
+    smells.push(...this.detectHeavyComputationPipes(file, analysis));
+
+    // 15. ASYNC_PIPE_MULTIPLE_SUBSCRIPTIONS detection
+    smells.push(...this.detectAsyncPipeMultipleSubscriptions(file, analysis));
+
+    // PHASE 4: Performance & Architecture Issues
+
+    // 16. NO_ONPUSH_STRATEGY detection
+    smells.push(...this.detectNoOnPushStrategy(file, analysis));
+
+    // 17. TWO_WAY_BINDING_HEAVY_USE detection
+    smells.push(...this.detectTwoWayBindingHeavyUse(file, analysis));
+
+    // 18. NO_COMPONENT_ENCAPSULATION detection
+    smells.push(...this.detectNoComponentEncapsulation(file, analysis));
+
+    // PHASE 5: i18n & Accessibility Issues
+
+    // 19. NO_I18N_INTEGRATION detection
+    smells.push(...this.detectNoI18nIntegration(file, analysis));
+
+    // 20. MISSING_ACCESSIBILITY_ATTRIBUTES detection
+    smells.push(...this.detectMissingAccessibilityAttributes(file, analysis));
 
     return smells;
   }
@@ -2182,6 +2297,490 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
 
       return smells;
     }
+
+  // Template Anti-Pattern Detection Methods
+
+  private detectTrustingExternalUrls(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for href bindings without proper validation
+      const hrefBindingRegex = /\[href\]="([^"]*)"/g;
+      let match;
+
+      while ((match = hrefBindingRegex.exec(line)) !== null) {
+        const urlValue = match[1];
+        const hasValidation = this.hasUrlValidation(content, index);
+
+        if (!hasValidation && (urlValue.includes('user.') || urlValue.includes('input.') || urlValue.includes('data.'))) {
+          smells.push(new CodeSmell(
+            `trusting-external-urls-${file.filePath}-${index + 1}`,
+            'TRUSTING_EXTERNAL_URLS',
+            Severity.HIGH,
+            new Location(file.filePath, index + 1, match.index + 1),
+            'External URL binding without validation - potential open redirect or JavaScript execution',
+            'Use DomSanitizer or validate URLs against whitelist',
+            Category.TEMPLATE_RENDERING
+          ));
+        }
+      }
+    });
+
+    return smells;
+  }
+
+  private detectNestedNgIf(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Count nested *ngIf directives in the line
+      const ngIfCount = (line.match(/\*ngIf/g) || []).length;
+      if (ngIfCount > 1) {
+        smells.push(new CodeSmell(
+          `nested-ngif-${file.filePath}-${index + 1}`,
+          'NESTED_NGIF',
+          Severity.MEDIUM,
+          new Location(file.filePath, index + 1, line.indexOf('*ngIf') + 1),
+          `Multiple *ngIf directives on same element (${ngIfCount} found) - creates pyramid of doom`,
+          'Use safe navigation operator (?.) or let syntax with single *ngIf',
+          Category.TEMPLATE_RENDERING
+        ));
+      }
+    });
+
+    return smells;
+  }
+
+  private detectNgIfNgForSameElement(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for both *ngIf and *ngFor on same element
+      if (line.includes('*ngIf') && line.includes('*ngFor')) {
+        smells.push(new CodeSmell(
+          `ngif-ngfor-same-element-${file.filePath}-${index + 1}`,
+          'NGIF_NGFOR_SAME_ELEMENT',
+          Severity.HIGH,
+          new Location(file.filePath, index + 1, Math.min(line.indexOf('*ngIf'), line.indexOf('*ngFor')) + 1),
+          'Both *ngIf and *ngFor on same element - unpredictable behavior and performance issues',
+          'Move *ngIf to parent element or use computed property in component',
+          Category.TEMPLATE_RENDERING
+        ));
+      }
+    });
+
+    return smells;
+  }
+
+  private detectComplexTemplateLogic(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for complex expressions in interpolation
+      const interpolationRegex = /{{([^}]+)}}/g;
+      let match;
+
+      while ((match = interpolationRegex.exec(line)) !== null) {
+        const expression = match[1].trim();
+
+        // Check for multiple operations, method calls, or complex logic
+        const complexityIndicators = [
+          expression.includes('&&') || expression.includes('||'), // Multiple conditions
+          expression.split('.').length > 3, // Deep property access
+          /\w+\([^)]*\)/.test(expression), // Method calls
+          /[\+\-\*\/]/.test(expression), // Arithmetic operations
+          expression.includes('filter(') || expression.includes('map(') || expression.includes('reduce(') // Array methods
+        ];
+
+        const complexityScore = complexityIndicators.filter(Boolean).length;
+
+        if (complexityScore >= 2) {
+          smells.push(new CodeSmell(
+            `complex-template-logic-${file.filePath}-${index + 1}`,
+            'COMPLEX_TEMPLATE_LOGIC',
+            complexityScore >= 3 ? Severity.HIGH : Severity.MEDIUM,
+            new Location(file.filePath, index + 1, match.index + 1),
+            `Complex logic in template expression (${complexityScore} complexity indicators)`,
+            'Move logic to component method, computed signal, or pipe',
+            Category.TEMPLATE_RENDERING
+          ));
+        }
+      }
+    });
+
+    return smells;
+  }
+
+  private detectTwoWayObjectBinding(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for [(ngModel)] with nested object properties
+      const twoWayBindingRegex = /\[\(ngModel\)\]="([^"]*\.[^"]*\.[^"]*)"/g;
+      let match;
+
+      while ((match = twoWayBindingRegex.exec(line)) !== null) {
+        smells.push(new CodeSmell(
+          `two-way-object-binding-${file.filePath}-${index + 1}`,
+          'TWO_WAY_OBJECT_BINDING',
+          Severity.HIGH,
+          new Location(file.filePath, index + 1, match.index + 1),
+          'Two-way binding on nested object properties - breaks OnPush change detection',
+          'Use event binding with immutable updates or Reactive Forms',
+          Category.TEMPLATE_RENDERING
+        ));
+      }
+    });
+
+    return smells;
+  }
+
+  private detectNullSafety(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for property access without safe navigation
+      const unsafeAccessRegex = /{{[^}]*\b\w+\.\w+\.\w+[^}]*}}/g; // At least 3 levels deep
+      let match;
+
+      while ((match = unsafeAccessRegex.exec(line)) !== null) {
+        const expression = match[1];
+        const hasSafeNavigation = expression.includes('?.');
+
+        if (!hasSafeNavigation) {
+          smells.push(new CodeSmell(
+            `null-safety-${file.filePath}-${index + 1}`,
+            'NULL_SAFETY',
+            Severity.MEDIUM,
+            new Location(file.filePath, index + 1, match.index + 1),
+            'Deep property access without safe navigation - potential null reference errors',
+            'Use safe navigation operator (?.) or enable strictTemplates',
+            Category.TEMPLATE_RENDERING
+          ));
+        }
+      }
+    });
+
+    return smells;
+  }
+
+  private detectTemplateDrivenComplexForms(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Check for multiple [(ngModel)] bindings indicating complex form
+    const ngModelCount = (content.match(/\[\(ngModel\)\]/g) || []).length;
+
+    if (ngModelCount > 5) {
+      // Find the first occurrence for location
+      const firstIndex = content.indexOf('[(ngModel)]');
+      const lines = content.substring(0, firstIndex).split('\n');
+
+      smells.push(new CodeSmell(
+        `template-driven-complex-forms-${file.filePath}`,
+        'TEMPLATE_DRIVEN_COMPLEX_FORMS',
+        Severity.MEDIUM,
+        new Location(file.filePath, lines.length, firstIndex - content.lastIndexOf('\n', firstIndex) + 1),
+        `Complex form with ${ngModelCount} two-way bindings - difficult to manage`,
+        'Use Reactive Forms with FormBuilder for better validation and testing',
+        Category.FORMS_VALIDATION
+      ));
+    }
+
+    return smells;
+  }
+
+  private detectFormStateNotCleared(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Check for form submission without reset
+    const hasNgSubmit = content.includes('(ngSubmit)');
+    const hasFormReset = content.includes('reset()') || content.includes('setValue({})') || content.includes('patchValue({})');
+
+    if (hasNgSubmit && !hasFormReset) {
+      const submitIndex = content.indexOf('(ngSubmit)');
+      const lines = content.substring(0, submitIndex).split('\n');
+
+      smells.push(new CodeSmell(
+        `form-state-not-cleared-${file.filePath}`,
+        'FORM_STATE_NOT_CLEARED',
+        Severity.LOW,
+        new Location(file.filePath, lines.length, submitIndex - content.lastIndexOf('\n', submitIndex) + 1),
+        'Form submission without state clearing - stale data remains visible',
+        'Call form.reset() after successful submission',
+        Category.FORMS_VALIDATION
+      ));
+    }
+
+    return smells;
+  }
+
+  private detectHeavyComputationPipes(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for pipe usage that might be expensive
+      const pipeRegex = /(\w+)\s*\|\s*(\w+)/g;
+      let match;
+
+      while ((match = pipeRegex.exec(line)) !== null) {
+        const pipeName = match[2];
+        // Common expensive pipes (this could be expanded)
+        const expensivePipes = ['filter', 'sort', 'map', 'reduce'];
+
+        if (expensivePipes.includes(pipeName.toLowerCase())) {
+          smells.push(new CodeSmell(
+            `heavy-computation-pipes-${file.filePath}-${index + 1}`,
+            'HEAVY_COMPUTATION_PIPES',
+            Severity.MEDIUM,
+            new Location(file.filePath, index + 1, match.index + 1),
+            `Potentially expensive pipe '${pipeName}' used in template`,
+            'Consider moving computation to component method or using pure pipes',
+            Category.PERFORMANCE_BUNDLE_METRICS
+          ));
+        }
+      }
+    });
+
+    return smells;
+  }
+
+  private detectAsyncPipeMultipleSubscriptions(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Check for multiple async pipe usages of the same observable
+    const asyncPipeUsages = content.match(/\|\s*async/g) || [];
+
+    if (asyncPipeUsages.length > 3) {
+      // Look for repeated observable names
+      const observablePattern = /(\w+)\s*\|\s*async/g;
+      const observables: string[] = [];
+      let match;
+
+      while ((match = observablePattern.exec(content)) !== null) {
+        observables.push(match[1]);
+      }
+
+      // Check for duplicates
+      const duplicates = observables.filter((obs, index) => observables.indexOf(obs) !== index);
+
+      if (duplicates.length > 0) {
+        const firstDuplicateIndex = content.indexOf(`${duplicates[0]} | async`);
+        const lines = content.substring(0, firstDuplicateIndex).split('\n');
+
+        smells.push(new CodeSmell(
+          `async-pipe-multiple-subscriptions-${file.filePath}`,
+          'ASYNC_PIPE_MULTIPLE_SUBSCRIPTIONS',
+          Severity.HIGH,
+          new Location(file.filePath, lines.length, firstDuplicateIndex - content.lastIndexOf('\n', firstDuplicateIndex) + 1),
+          `Multiple async pipe subscriptions to same observable '${duplicates[0]}'`,
+          'Use shareReplay(1) in component or single async pipe with *ngIf let syntax',
+          Category.PERFORMANCE_BUNDLE_METRICS
+        ));
+      }
+    }
+
+    return smells;
+  }
+
+  private detectNoOnPushStrategy(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Check if it's a component file
+    if (!content.includes('@Component(')) {
+      return smells;
+    }
+
+    // Check for OnPush strategy
+    const hasOnPush = content.includes('ChangeDetectionStrategy.OnPush') ||
+                      content.includes('changeDetection: ChangeDetectionStrategy.OnPush');
+
+    if (!hasOnPush) {
+      smells.push(new CodeSmell(
+        `no-onpush-strategy-${file.filePath}`,
+        'NO_ONPUSH_STRATEGY',
+        Severity.LOW,
+        new Location(file.filePath, 1, 1),
+        'Component not using OnPush change detection strategy',
+        'Consider adding ChangeDetectionStrategy.OnPush for better performance',
+        Category.PERFORMANCE_BUNDLE_METRICS
+      ));
+    }
+
+    return smells;
+  }
+
+  private detectTwoWayBindingHeavyUse(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Count two-way bindings
+    const twoWayBindingCount = (content.match(/\[\(ngModel\)\]/g) || []).length;
+
+    if (twoWayBindingCount > 3) {
+      const firstIndex = content.indexOf('[(ngModel)]');
+      const lines = content.substring(0, firstIndex).split('\n');
+
+      smells.push(new CodeSmell(
+        `two-way-binding-heavy-use-${file.filePath}`,
+        'TWO_WAY_BINDING_HEAVY_USE',
+        Severity.MEDIUM,
+        new Location(file.filePath, lines.length, firstIndex - content.lastIndexOf('\n', firstIndex) + 1),
+        `Heavy use of two-way binding (${twoWayBindingCount} instances) - tight coupling`,
+        'Use explicit Input/Output events or Reactive Forms for better architecture',
+        Category.ARCHITECTURE_DEPENDENCY_INJECTION
+      ));
+    }
+
+    return smells;
+  }
+
+  private detectNoComponentEncapsulation(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Check if it's a component file
+    if (!content.includes('@Component(')) {
+      return smells;
+    }
+
+    // Check for explicit encapsulation setting
+    const hasEncapsulation = content.includes('encapsulation:') ||
+                            content.includes('ViewEncapsulation.');
+
+    if (!hasEncapsulation) {
+      smells.push(new CodeSmell(
+        `no-component-encapsulation-${file.filePath}`,
+        'NO_COMPONENT_ENCAPSULATION',
+        Severity.LOW,
+        new Location(file.filePath, 1, 1),
+        'Component encapsulation not explicitly set - defaults to Emulated',
+        'Explicitly set encapsulation: ViewEncapsulation.Emulated for clarity',
+        Category.ARCHITECTURE_DEPENDENCY_INJECTION
+      ));
+    }
+
+    return smells;
+  }
+
+  private detectNoI18nIntegration(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Check for user-facing text without i18n
+    const textPatterns = [
+      /["'][\w\s]{10,}["']/g, // Long strings that might be user-facing
+      />[\w\s]{10,}</g // Text content in elements
+    ];
+
+    let hasI18n = content.includes('i18n') || content.includes('$localize');
+
+    if (!hasI18n) {
+      // Look for potential user-facing text
+      for (const pattern of textPatterns) {
+        const matches = content.match(pattern);
+        if (matches && matches.length > 2) { // Multiple text strings
+          smells.push(new CodeSmell(
+            `no-i18n-integration-${file.filePath}`,
+            'NO_I18N_INTEGRATION',
+            Severity.LOW,
+            new Location(file.filePath, 1, 1),
+            'Template contains user-facing text without i18n integration',
+            'Add i18n attributes to translatable strings or use $localize',
+            Category.TEMPLATE_RENDERING
+          ));
+          break; // Only report once per file
+        }
+      }
+    }
+
+    return smells;
+  }
+
+  private detectMissingAccessibilityAttributes(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for form inputs without labels
+      if (line.includes('<input') && !line.includes('aria-label') && !line.includes('aria-labelledby')) {
+        // Look for associated label in nearby lines
+        const contextStart = Math.max(0, index - 3);
+        const contextEnd = Math.min(lines.length, index + 3);
+        const context = lines.slice(contextStart, contextEnd).join('\n');
+
+        if (!context.includes('<label') || !context.includes('for=')) {
+          smells.push(new CodeSmell(
+            `missing-accessibility-attributes-${file.filePath}-${index + 1}`,
+            'MISSING_ACCESSIBILITY_ATTRIBUTES',
+            Severity.MEDIUM,
+            new Location(file.filePath, index + 1, line.indexOf('<input') + 1),
+            'Input element missing accessibility attributes (label, aria-label, etc.)',
+            'Add proper labels and ARIA attributes for screen reader support',
+            Category.TEMPLATE_RENDERING
+          ));
+        }
+      }
+
+      // Check for buttons without accessible names
+      if (line.includes('<button') && !line.includes('aria-label') && !line.includes('>')) {
+        const buttonContent = line.substring(line.indexOf('<button'), line.indexOf('>', line.indexOf('<button')) + 1);
+        if (!buttonContent.includes('aria-label') && buttonContent.length < 20) { // Probably no text content
+          smells.push(new CodeSmell(
+            `missing-accessibility-attributes-${file.filePath}-${index + 1}`,
+            'MISSING_ACCESSIBILITY_ATTRIBUTES',
+            Severity.MEDIUM,
+            new Location(file.filePath, index + 1, line.indexOf('<button') + 1),
+            'Button element may be missing accessible name',
+            'Add text content or aria-label attribute to button',
+            Category.TEMPLATE_RENDERING
+          ));
+        }
+      }
+    });
+
+    return smells;
+  }
+
+  // Helper methods
+
+  private hasUrlValidation(content: string, lineIndex: number): boolean {
+    // Check for URL validation patterns
+    const validationPatterns = [
+      /DomSanitizer\.sanitize/,
+      /bypassSecurityTrustUrl/,
+      /isSafeUrl/,
+      /validateUrl/,
+      /\.protocol\s*===/,
+      /http:/,
+      /https:/
+    ];
+
+    // Look in a reasonable range around the href usage
+    const startLine = Math.max(0, lineIndex - 15);
+    const endLine = Math.min(content.split('\n').length, lineIndex + 15);
+    const context = content.split('\n').slice(startLine, endLine).join('\n');
+
+    return validationPatterns.some(pattern => pattern.test(context));
+  }
 
   private countBySeverity(smells: CodeSmell[]): Record<string, number> {
     return smells.reduce((counts, smell) => {
