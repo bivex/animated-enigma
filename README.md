@@ -2,7 +2,7 @@
 
 **Angular Static Analysis Tool** | **Angular Anti-Patterns** | **Angular Code Quality** | **Angular Performance** | **Angular Security** | **TypeScript** | **SSR** | **Signals** | **NgRx** | **Dependency Injection** | **Template Anti-Patterns** | **Accessibility** | **i18n**
 
-Angular application static analysis tool based on formal Z-notation specifications from the anti-patterns catalog. Detects over 73+ architectural issues, security vulnerabilities, and performance problems in Angular projects.
+Angular application static analysis tool based on formal Z-notation specifications from the anti-patterns catalog. Detects over 79+ architectural issues, security vulnerabilities, and performance problems in Angular projects.
 
 **Keywords**: angular smells, angular anti-patterns, angular static analysis, angular code quality, angular performance, angular security, typescript analysis, angular signals, angular hydration, angular ngrx, angular dependency injection, angular best practices, angular linting, angular code review, angular architecture, angular refactoring, angular optimization, angular developer tools, frontend code quality, angular enterprise, angular large scale applications
 
@@ -49,7 +49,7 @@ angular-smells --version
 
 ## ✨ Key Features
 
-- **🔍 73+ anti-pattern detectors** - Complete coverage of Angular architectural issues including 16+ template anti-patterns
+- **🔍 79+ anti-pattern detectors** - Complete coverage of Angular architectural issues including 22+ template anti-patterns
 - **📊 Formal Z-notation specifications** - Mathematically precise detection
 - **🎯 4 severity levels** - Fix prioritization (Critical/High/Medium/Low)
 - **⚡ High performance** - Fast analysis of large codebases
@@ -115,6 +115,9 @@ angular-smells --version
 - **TWO_WAY_BINDING_HEAVY_USE**: Excessive use of two-way binding
 - **TWO_WAY_OBJECT_BINDING**: Two-way binding on nested object properties
 - **UNSAFE_INNER_HTML**: XSS vulnerabilities through innerHTML
+- **CSS_HIDING_INSTEAD_OF_NGIF**: Using CSS to hide elements instead of *ngIf
+- **OBJECT_CREATION_IN_TEMPLATE**: Creating objects/arrays directly in templates
+- **EXCESSIVE_TWO_WAY_BINDING**: Too many two-way bindings causing performance issues
 
 ### Reactivity & Signals Anti-Patterns
 - **MEMORY_LEAK_SUBSCRIPTION**: Memory leaks from uncleaned subscriptions
@@ -275,6 +278,7 @@ Run tests: `npm run start template-tests`
 | `ZONLESS_TIMER_UPDATES` | Performance & Bundle Metrics | 🟠 HIGH | Timers without change detection in zoneless |
 | `COMPLEX_TEMPLATE_LOGIC` | Template & Rendering | 🟠 HIGH | Complex calculations in template expressions |
 | `TWO_WAY_OBJECT_BINDING` | Template & Rendering | 🟠 HIGH | Two-way binding on nested object properties |
+| `EXCESSIVE_TWO_WAY_BINDING` | Forms & Validation | 🟠 HIGH | Too many two-way bindings causing performance issues |
 | `BROAD_SELECTORS` | State Management | 🟡 MEDIUM | NgRx selectors returning excessive data |
 | `CONTROL_FLOW_DEPRECATED` | Template & Rendering | 🟡 MEDIUM | Deprecated *ngIf/*ngFor directives |
 | `DEFER_ERROR_BLOCKS` | Template & Rendering | 🟡 MEDIUM | @defer without @error blocks |
@@ -310,6 +314,8 @@ Run tests: `npm run start template-tests`
 | `TYPESCRIPT_ANY` | TypeScript | 🟡 MEDIUM | Usage of any type |
 | `TYPESCRIPT_NON_NULL` | TypeScript | 🟡 MEDIUM | Non-null assertion operator usage |
 | `ZONLESS_OBSERVABLE_SUBSCRIPTIONS` | Performance & Bundle Metrics | 🟡 MEDIUM | Observable subscriptions in zoneless apps |
+| `CSS_HIDING_INSTEAD_OF_NGIF` | Template & Rendering | 🟡 MEDIUM | Using CSS to hide elements instead of *ngIf |
+| `OBJECT_CREATION_IN_TEMPLATE` | Template & Rendering | 🟡 MEDIUM | Creating objects/arrays directly in templates |
 | `TESTING_ASYNC` | Testing | 🟢 LOW | Deprecated async() wrapper in tests |
 | `TESTING_IMPLEMENTATION` | Testing | 🟢 LOW | Testing implementation details |
 

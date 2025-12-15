@@ -158,6 +158,9 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
       smells.push(...this.detectNoComponentEncapsulation(templateFile, analysis));
       smells.push(...this.detectNoI18nIntegration(templateFile, analysis));
       smells.push(...this.detectMissingAccessibilityAttributes(templateFile, analysis));
+      smells.push(...this.detectCssHidingInsteadOfNgIf(templateFile, analysis));
+      smells.push(...this.detectObjectCreationInTemplate(templateFile, analysis));
+      smells.push(...this.detectExcessiveTwoWayBinding(templateFile, analysis));
 
     } catch (error) {
       // Don't throw error for template parsing failures in components
@@ -376,6 +379,17 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
 
     // 20. MISSING_ACCESSIBILITY_ATTRIBUTES detection
     smells.push(...this.detectMissingAccessibilityAttributes(file, analysis));
+
+    // PHASE 6: Additional Template Anti-Patterns
+
+    // 21. CSS_HIDING_INSTEAD_OF_NGIF detection
+    smells.push(...this.detectCssHidingInsteadOfNgIf(file, analysis));
+
+    // 22. OBJECT_CREATION_IN_TEMPLATE detection
+    smells.push(...this.detectObjectCreationInTemplate(file, analysis));
+
+    // 23. EXCESSIVE_TWO_WAY_BINDING detection
+    smells.push(...this.detectExcessiveTwoWayBinding(file, analysis));
 
     return smells;
   }
@@ -2756,6 +2770,145 @@ export class AngularSmellDetectorAdapter implements SmellDetectorPort {
         }
       }
     });
+
+    return smells;
+  }
+
+  private detectCssHidingInsteadOfNgIf(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for [hidden] attribute usage
+      if (line.includes('[hidden]')) {
+        smells.push(new CodeSmell(
+          `css-hiding-instead-of-ngif-${file.filePath}-${index + 1}`,
+          'CSS_HIDING_INSTEAD_OF_NGIF',
+          Severity.MEDIUM,
+          new Location(file.filePath, index + 1, line.indexOf('[hidden]') + 1),
+          '[hidden] keeps element in DOM - use *ngIf to remove element when not needed',
+          'Replace [hidden] with *ngIf for better performance and cleaner DOM',
+          Category.TEMPLATE_RENDERING
+        ));
+      }
+    });
+
+    return smells;
+  }
+
+  private detectObjectCreationInTemplate(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+    const lines = content.split('\n');
+
+    lines.forEach((line, index) => {
+      // Check for object/array creation in template bindings
+      const objectCreationPatterns = [
+        /\[.*\]\s*=\s*["']{[^}]*}/,  // [property]="{...}"
+        /\[.*\]\s*=\s*["']\[.*\]/,    // [property]="[...]"
+        /\{\{\s*\{[^}]*\}\s*\}\}/,    // {{ { ... } }}
+        /\{\{\s*\[.*\]\s*\}\}/,       // {{ [ ... ] }}
+        /\(.*\)\s*=\s*["']{[^}]*}/,   // (event)="{...}"
+        /\(.*\)\s*=\s*["']\[.*\]/,    // (event)="[...]"
+      ];
+
+      objectCreationPatterns.forEach(pattern => {
+        const match = line.match(pattern);
+        if (match && match.index !== undefined) {
+          smells.push(new CodeSmell(
+            `object-creation-in-template-${file.filePath}-${index + 1}`,
+            'OBJECT_CREATION_IN_TEMPLATE',
+            Severity.MEDIUM,
+            new Location(file.filePath, index + 1, match.index + 1),
+            'Object/array creation in template causes unnecessary re-creation on each change detection',
+            'Move object/array creation to component property or method',
+            Category.TEMPLATE_RENDERING
+          ));
+        }
+      });
+
+      // Check for function calls that likely create objects
+      const functionCallPatterns = [
+        /\{\{\s*\w+\([^)]*\)\s*\}\}/,  // {{ function(...) }}
+        /\[.*\]\s*=\s*["']\w+\([^)]*\)/, // [property]="function(...)"
+      ];
+
+      functionCallPatterns.forEach(pattern => {
+        const match = line.match(pattern);
+        if (match && match.index !== undefined) {
+          // Exclude common Angular pipes and directives
+          const functionCall = match[0];
+          if (!functionCall.includes('|') &&
+              !functionCall.includes('async') &&
+              !functionCall.includes('trackBy') &&
+              !functionCall.includes('index')) {
+            smells.push(new CodeSmell(
+              `object-creation-in-template-${file.filePath}-${index + 1}`,
+              'OBJECT_CREATION_IN_TEMPLATE',
+              Severity.LOW,
+              new Location(file.filePath, index + 1, match.index + 1),
+              'Function call in template may create objects unnecessarily',
+              'Consider moving computation to component or using pure pipes',
+              Category.TEMPLATE_RENDERING
+            ));
+          }
+        }
+      });
+    });
+
+    return smells;
+  }
+
+  private detectExcessiveTwoWayBinding(file: SourceFile, analysis: any): CodeSmell[] {
+    const smells: CodeSmell[] = [];
+    const content = file.content;
+
+    // Count two-way bindings in the template
+    const twoWayBindingCount = (content.match(/\[\(ngModel\)\]/g) || []).length;
+
+    if (twoWayBindingCount > 0) {
+      // Check for performance impact patterns
+      const lines = content.split('\n');
+
+      // Look for large forms or complex structures with many two-way bindings
+      const hasLargeForm = twoWayBindingCount >= 10;
+      const hasNestedStructure = content.includes('<form') || content.includes('*ngFor');
+
+      if (hasLargeForm || (twoWayBindingCount >= 5 && hasNestedStructure)) {
+        // Find the location of the first ngModel
+        const firstNgModelIndex = content.indexOf('[(ngModel)]');
+        const linesBefore = content.substring(0, firstNgModelIndex).split('\n');
+
+        smells.push(new CodeSmell(
+          `excessive-two-way-binding-${file.filePath}`,
+          'EXCESSIVE_TWO_WAY_BINDING',
+          hasLargeForm ? Severity.HIGH : Severity.MEDIUM,
+          new Location(file.filePath, linesBefore.length, firstNgModelIndex - content.lastIndexOf('\n', firstNgModelIndex) + 1),
+          `${twoWayBindingCount} two-way bindings detected - excessive change detection cycles`,
+          'Consider using reactive forms or one-way binding with event emitters for better performance',
+          Category.FORMS_VALIDATION
+        ));
+      }
+
+      // Check for two-way binding on complex objects (already covered by TWO_WAY_OBJECT_BINDING)
+      // But add additional context about performance impact
+      const complexObjectBindings = content.match(/\[\(ngModel\)\]\s*=\s*["'][^"]*\.[^"]*\.[^"]*["']/g) || [];
+      if (complexObjectBindings.length > 0 && complexObjectBindings[0]) {
+        const firstComplexIndex = content.indexOf(complexObjectBindings[0]);
+        const linesBefore = content.substring(0, firstComplexIndex).split('\n');
+
+        smells.push(new CodeSmell(
+          `excessive-two-way-binding-complex-${file.filePath}`,
+          'EXCESSIVE_TWO_WAY_BINDING',
+          Severity.HIGH,
+          new Location(file.filePath, linesBefore.length, firstComplexIndex - content.lastIndexOf('\n', firstComplexIndex) + 1),
+          'Two-way binding on nested object properties causes frequent change detection and mutation issues',
+          'Use reactive forms with immutable updates or one-way binding with explicit event handling',
+          Category.FORMS_VALIDATION
+        ));
+      }
+    }
 
     return smells;
   }
